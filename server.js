@@ -61,7 +61,7 @@ function broadcastUsersList() {
     });
 }
 
-const PORT = 3000;
+const PORT = 8089;
 server.listen(PORT, () => {
     console.log(`WebSocket server is running on port ${PORT}`);
 });

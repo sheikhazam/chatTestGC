@@ -1,90 +1,31 @@
-<!DOCTYPE html>
-<html>
+const WebSocket = require('ws');
 
-<head>
-    <title>Private Chat</title>
-</head>
+const server = new WebSocket.Server({ port: 8080 });
 
-<body>
-    <h1>Private Chat</h1>
-    <div>
-        <label for="identitySelect">Choose Your Identity:</label>
-        <select id="identitySelect">
-            <option value="user1">User 1</option>
-            <option value="user2">User 2</option>
-            <option value="user3">User 3</option>
-        </select>
-    </div>
-    <div>
-        <select id="targetUserSelect">
-            <option value="user1">User 1</option>
-            <option value="user2">User 2</option>
-            <option value="user3">User 3</option>
-        </select> <!-- Dropdown for selecting target user -->
-        <input type="text" id="messageInput" placeholder="Type your message">
-        <button id="sendButton">Send</button>
-    </div>
-    <div id="messages"></div>
-    <script>
-        let identity = 'user1'; // Default identity
+const clients = new Set();
 
-        const socket = new WebSocket('ws://35.197.224.160:8089'); // Connect to the WebSocket server
+server.on('connection', (client) => {
+// Add the new client to the list
+clients.add(client);
 
-        const identitySelect = document.getElementById('identitySelect');
-        const targetUserSelect = document.getElementById('targetUserSelect');
-        const messageInput = document.getElementById('messageInput');
-        const sendButton = document.getElementById('sendButton');
-        const messagesContainer = document.getElementById('messages');
+// Send a welcome message to the new client
+client.send('Welcome to the chat!');
 
-        identitySelect.addEventListener('change', () => {
-            identity = identitySelect.value;
-        });
+// Broadcast messages to all connected clients
+client.on('message', (message) => {
+broadcast(message);
+});
 
-        sendButton.addEventListener('click', () => {
-            const targetUserId = targetUserSelect.value;
-            const message = messageInput.value;
-            if (message.trim() !== '') {
-                sendMessage(identity, targetUserId, message);
-                messageInput.value = '';
-            }
-        });
+// Remove the client from the list when they disconnect
+client.on('close', () => {
+clients.delete(client);
+});
+});
 
-        function sendMessage(senderId, targetUserId, message) {
-            const messageObj = {
-                type: 'message',
-                content: message,
-                senderId: senderId,
-                targetUserId: targetUserId
-            };
-            socket.send(JSON.stringify(messageObj));
-        }
-
-        socket.addEventListener('message', (event) => {
-            const messageObj = JSON.parse(event.data);
-            if (messageObj.type === 'message') {
-                displayMessage(messageObj);
-            }
-        });
-
-        function displayMessage(messageObj) {
-            const messageElement = document.createElement('div');
-            messageElement.textContent = `${messageObj.senderId}: ${messageObj.content}`;
-            messagesContainer.appendChild(messageElement);
-        }
-
-        socket.addEventListener('open', () => {
-            console.log('Connected to the server.');
-        });
-
-        socket.addEventListener('close', () => {
-            console.log('Disconnected from the server.');
-            messagesContainer.innerHTML = '';
-        });
-
-        socket.addEventListener('error', (error) => {
-            console.error('WebSocket error:', error);
-        });
-    </script>
-</body>
-
-</html>
+function broadcast(message) {
+clients.forEach((client) => {
+if (client.readyState === WebSocket.OPEN) {
+client.send(message);
+}
+});
+}

@@ -1,7 +1,12 @@
-const http = require('http');
+const https = require('https');
+const fs = require('fs');
 const WebSocket = require('ws');
 
-const server = http.createServer();
+const server = https.createServer({
+    key: fs.readFileSync('server.key'),
+    cert: fs.readFileSync('server.crt')
+});
+
 const wss = new WebSocket.Server({ server });
 
 const users = [
@@ -61,7 +66,7 @@ function broadcastUsersList() {
     });
 }
 
-const PORT = 3389;
+const PORT = 8089; // Use port 8089
 server.listen(PORT, () => {
     console.log(`WebSocket server is running on port ${PORT}`);
 });

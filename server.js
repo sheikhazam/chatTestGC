@@ -1,31 +1,29 @@
-const WebSocket = require('ws');
+const http = require('http');
+const path = require('path');
+const express = require('express');
+const socketIo = require('socket.io');
 
-const server = new WebSocket.Server({ port: 8080 });
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server);
 
-const clients = new Set();
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index2.html'));
+});
 
-server.on('connection', (client) => {
-    // Add the new client to the list
-    clients.add(client);
+io.on('connection', (socket) => {
+    console.log('A user connected');
 
-    // Send a welcome message to the new client
-    client.send('Welcome to the chat!');
-
-    // Broadcast messages to all connected clients
-    client.on('message', (message) => {
-        broadcast(message);
+    socket.on('message', (message) => {
+        io.emit('message', message); // Broadcast the message to all clients
     });
 
-    // Remove the client from the list when they disconnect
-    client.on('close', () => {
-        clients.delete(client);
+    socket.on('disconnect', () => {
+        console.log('A user disconnected');
     });
 });
 
-function broadcast(message) {
-    clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-            client.send(message);
-        }
-    });
-}
+const PORT = 8080;
+server.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});

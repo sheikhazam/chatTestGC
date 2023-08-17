@@ -2,88 +2,60 @@
 <html>
 
 <head>
-    <title>Private Chat</title>
+    <title>Socket.io Chat</title>
 </head>
 
 <body>
-    <h1>Private Chat</h1>
-    <div>
-        <label for="identitySelect">Choose Your Identity:</label>
-        <select id="identitySelect">
-            <option value="user1">User 1</option>
-            <option value="user2">User 2</option>
-            <option value="user3">User 3</option>
-        </select>
-    </div>
-    <div>
-        <select id="targetUserSelect">
-            <option value="user1">User 1</option>
-            <option value="user2">User 2</option>
-            <option value="user3">User 3</option>
-        </select> <!-- Dropdown for selecting target user -->
-        <input type="text" id="messageInput" placeholder="Type your message">
-        <button id="sendButton">Send</button>
-    </div>
-    <div id="messages"></div>
+    <input type="text" id="messageInput" placeholder="Type your message">
+    <button onclick="sendMessage()">Send</button>
+    <div id="chatOutput"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
     <script>
-        let identity = 'user1'; // Default identity
+        const socket = io();
 
-        const socket = new WebSocket('ws://35.197.224.160:8089'); // Connect to the WebSocket server
-
-        const identitySelect = document.getElementById('identitySelect');
-        const targetUserSelect = document.getElementById('targetUserSelect');
-        const messageInput = document.getElementById('messageInput');
-        const sendButton = document.getElementById('sendButton');
-        const messagesContainer = document.getElementById('messages');
-
-        identitySelect.addEventListener('change', () => {
-            identity = identitySelect.value;
+        socket.on('message', (message) => {
+            const chatOutput = document.getElementById('chatOutput');
+            chatOutput.innerHTML += `<p>${message}</p>`;
         });
 
-        sendButton.addEventListener('click', () => {
-            const targetUserId = targetUserSelect.value;
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
             const message = messageInput.value;
-            if (message.trim() !== '') {
-                sendMessage(identity, targetUserId, message);
-                messageInput.value = '';
-            }
-        });
-
-        function sendMessage(senderId, targetUserId, message) {
-            const messageObj = {
-                type: 'message',
-                content: message,
-                senderId: senderId,
-                targetUserId: targetUserId
-            };
-            socket.send(JSON.stringify(messageObj));
+            socket.emit('message', message);
+            messageInput.value = '';
         }
+    </script>
+</body>
 
-        socket.addEventListener('message', (event) => {
-            const messageObj = JSON.parse(event.data);
-            if (messageObj.type === 'message') {
-                displayMessage(messageObj);
-            }
+</html>
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Socket.io Chat</title>
+</head>
+
+<body>
+    <input type="text" id="messageInput" placeholder="Type your message">
+    <button onclick="sendMessage()">Send</button>
+    <div id="chatOutput"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        socket.on('message', (message) => {
+            const chatOutput = document.getElementById('chatOutput');
+            chatOutput.innerHTML += `<p>${message}</p>`;
         });
 
-        function displayMessage(messageObj) {
-            const messageElement = document.createElement('div');
-            messageElement.textContent = `${messageObj.senderId}: ${messageObj.content}`;
-            messagesContainer.appendChild(messageElement);
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value;
+            socket.emit('message', message);
+            messageInput.value = '';
         }
-
-        socket.addEventListener('open', () => {
-            console.log('Connected to the server.');
-        });
-
-        socket.addEventListener('close', () => {
-            console.log('Disconnected from the server.');
-            messagesContainer.innerHTML = '';
-        });
-
-        socket.addEventListener('error', (error) => {
-            console.error('WebSocket error:', error);
-        });
     </script>
 </body>
 

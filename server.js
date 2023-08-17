@@ -1,29 +1,67 @@
 const http = require('http');
-const path = require('path');
-const express = require('express');
-const socketIo = require('socket.io');
+const WebSocket = require('ws');
 
-const app = express();
-const server = http.createServer(app);
-const io = socketIo(server);
+const server = http.createServer();
+const wss = new WebSocket.Server({ server });
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index2.html'));
-});
+const users = [
+    { id: 'user1', ws: null }, // Example users
+    { id: 'user2', ws: null },
+    { id: 'user3', ws: null }
+];
 
-io.on('connection', (socket) => {
-    console.log('A user connected');
+wss.on('connection', (ws) => {
+    console.log('A client connected:', ws.id);
 
-    socket.on('message', (message) => {
-        io.emit('message', message); // Broadcast the message to all clients
+    const user = users.find(u => u.ws === null);
+    if (user) {
+        user.ws = ws;
+        ws.id = user.id;
+        broadcastUsersList();
+    } else {
+        ws.close();
+    }
+
+    ws.on('message', (message) => {
+        try {
+            const messageObj = JSON.parse(message);
+            if (messageObj.type === 'message') {
+                const recipient = users.find(u => u.id === messageObj.targetUserId);
+                if (recipient && recipient.ws) {
+                    recipient.ws.send(JSON.stringify({
+                        type: 'message',
+                        content: messageObj.content,
+                        senderId: messageObj.senderId
+                    }));
+                }
+            }
+        } catch (error) {
+            console.error('Error processing message:', error);
+        }
     });
 
-    socket.on('disconnect', () => {
-        console.log('A user disconnected');
+    ws.on('close', () => {
+        console.log('A client disconnected:', ws.id);
+        const user = users.find(u => u.id === ws.id);
+        if (user) {
+            user.ws = null;
+            broadcastUsersList();
+        }
     });
+
+    broadcastUsersList();
 });
 
-const PORT = 8080;
+function broadcastUsersList() {
+    const activeUsers = users.filter(u => u.ws !== null).map(u => ({ id: u.id }));
+    users.forEach(user => {
+        if (user.ws) {
+            user.ws.send(JSON.stringify({ type: 'users', data: activeUsers }));
+        }
+    });
+}
+
+const PORT = 3389;
 server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`WebSocket server is running on port ${PORT}`);
 });

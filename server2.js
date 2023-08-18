@@ -6,13 +6,13 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIO(server);
 
-app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/index2.html'); // Update the path
+// Serve socket.io.js directly from the 'socket.io' module
+app.get('/socket.io/socket.io.js', (req, res) => {
+    res.sendFile(__dirname + '/node_modules/socket.io/client-dist/socket.io.js');
 });
 
-// Serve the socket.io.js file from the current directory
-app.get('/socket.io.js', (req, res) => {
-    res.sendFile(__dirname + '/socket.io.js');
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/index.html');
 });
 
 io.on('connection', (socket) => {

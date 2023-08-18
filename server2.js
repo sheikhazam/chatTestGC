@@ -23,5 +23,5 @@ io.on('connection', (socket) => {
 });
 
 server.listen(8089, () => {
-    console.log('Server listening on *:3000');
+    console.log('Server listening on *:8089');
 });
